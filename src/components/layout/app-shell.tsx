@@ -248,7 +248,24 @@ function MoreSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: bo
             <SheetTitle>More</SheetTitle>
             <SheetDescription className="sr-only">All sections</SheetDescription>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ConfirmDialog
+              title="Log out"
+              description="Are you sure you want to log out?"
+              confirmLabel="Log out"
+              destructive
+              onConfirm={() => {
+                onOpenChange(false);
+                forge.logout();
+              }}
+              trigger={
+                <Button variant="ghost" size="icon" aria-label="Log out" title="Log out">
+                  <LogOut className="size-5" />
+                </Button>
+              }
+            />
+          </div>
         </SheetHeader>
         <nav className="grid grid-cols-3 gap-2" aria-label="More sections">
           {items.map((n) => (
@@ -350,9 +367,12 @@ function MobileTopBar() {
         <LogoMark className="size-7" />
         <span className="text-[14px] font-semibold tracking-[0.18em]">FORGE</span>
       </Link>
-      <Button variant="ghost" size="icon" onClick={openCommandPalette} aria-label="Search">
-        <Search className="size-5" strokeWidth={1.75} />
-      </Button>
+      <div className="flex items-center gap-1">
+        <NotificationCenter />
+        <Button variant="ghost" size="icon" onClick={openCommandPalette} aria-label="Search">
+          <Search className="size-5" strokeWidth={1.75} />
+        </Button>
+      </div>
     </header>
   );
 }
