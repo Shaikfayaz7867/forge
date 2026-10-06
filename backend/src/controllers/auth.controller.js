@@ -10,7 +10,7 @@ function setAuthCookies(res, accessToken, refreshToken) {
   res.cookie(ACCESS_COOKIE_NAME, accessToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: "strict",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
     maxAge: 15 * 60 * 1000, // 15 minutes (matches token expiry)
   });
@@ -18,7 +18,7 @@ function setAuthCookies(res, accessToken, refreshToken) {
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: "strict",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
@@ -28,13 +28,13 @@ function clearAuthCookies(res) {
   res.clearCookie(ACCESS_COOKIE_NAME, {
     httpOnly: true,
     secure: isProd,
-    sameSite: "strict",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
   });
   res.clearCookie(REFRESH_COOKIE_NAME, {
     httpOnly: true,
     secure: isProd,
-    sameSite: "strict",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
   });
 }
