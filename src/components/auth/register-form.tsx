@@ -36,7 +36,11 @@ export function RegisterForm() {
           router.push("/login");
         }
       } else {
-        toast.error(res.error?.message || "Failed to create account");
+        if (res.error?.code === "VALIDATION_ERROR" && res.error?.details?.length > 0) {
+          toast.error(res.error.details[0].message);
+        } else {
+          toast.error(res.error?.message || "Failed to create account");
+        }
       }
     } catch (err) {
       toast.error("Failed to connect to server");
