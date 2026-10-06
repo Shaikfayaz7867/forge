@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: forge-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: forge_user
+      POSTGRES_PASSWORD: forge_password
+      POSTGRES_DB: forge_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forge_user -d forge_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forge-backend-api
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://forge_user:forge_password@postgres:5432/forge_db?schema=public
+      JWT_ACCESS_SECRET: change_me_production_access_secret_key_at_least_64_bytes_long
+      JWT_REFRESH_SECRET: change_me_production_refresh_secret_key_at_least_64_bytes_long
+      CORS_ORIGIN: http://localhost:3000
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads_data:

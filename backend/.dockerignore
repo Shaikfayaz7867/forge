@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+coverage
+logs
+uploads/*
+!uploads/.gitkeep
+.git
+.github
+Dockerfile
+docker-compose.yml

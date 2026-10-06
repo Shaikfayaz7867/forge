@@ -1,0 +1,617 @@
+// This is your Prisma schema file for Forge backend.
+// Forge domain: gym workout tracker + South Indian food/calorie tracker.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum Goal {
+  build_muscle
+  gain_weight
+  lose_fat
+  maintain
+  strength
+  general
+}
+
+enum ActivityLevel {
+  sedentary
+  light
+  moderate
+  very
+}
+
+enum Experience {
+  beginner
+  intermediate
+  advanced
+}
+
+enum MuscleGroup {
+  chest
+  back
+  shoulders
+  legs
+  arms
+  core
+}
+
+enum Equipment {
+  barbell
+  dumbbell
+  cable
+  machine
+  bodyweight
+  ez_bar // stored as "ez-bar" handled in app layer
+}
+
+enum Difficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum WorkoutCategory {
+  push
+  pull
+  legs
+  upper
+  lower
+  full
+  custom
+}
+
+enum MealType {
+  breakfast
+  lunch
+  snack
+  dinner
+  other
+}
+
+enum FoodCategory {
+  Breakfast
+  Rice
+  Curries
+  Breads
+  Snacks
+  Dairy
+  Protein
+  Vegetables
+  Fruits
+  Nuts_and_Seeds
+  Drinks
+  Sweets
+}
+
+enum PhotoPose {
+  front
+  side
+  back
+}
+
+enum WeightUnit {
+  kg
+  lb
+}
+
+enum HeightUnit {
+  cm
+  ft
+}
+
+enum AuditAction {
+  REGISTER
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  LOGOUT_ALL
+  PASSWORD_CHANGED
+  ACCOUNT_DELETED
+  PROFILE_UPDATED
+  DATA_IMPORTED
+  DATA_EXPORTED
+  ADMIN_ACTION
+}
+
+enum NotificationType {
+  info
+  success
+  warning
+  error
+  quote
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH / USER
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  profile       UserProfile?
+  settings      UserSettings?
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  // User-owned data
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+  activeSession   ActiveSession?
+  foodLogEntries  FoodLogEntry[]
+  weightEntries   WeightEntry[]
+  measurements    MeasurementEntry[]
+  waterLogs       WaterLog[]
+  progressPhotos  ProgressPhoto[]
+  notifications   Notification[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique // store hash of the token, never plaintext
+  family      String    // rotation family — detect reuse attacks
+  isRevoked   Boolean   @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  userAgent   String?
+  ipAddress   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([family])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFILE & SETTINGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model UserProfile {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  name            String        @db.VarChar(40)
+  age             Int
+  gender          Gender
+  heightCm        Decimal       @db.Decimal(5, 1)
+  weightKg        Decimal       @db.Decimal(5, 1)
+  goal            Goal
+  activity        ActivityLevel
+  trainingDays    Int           // 2–6, checked in app layer
+  experience      Experience
+  calorieOverride Int?          // null = use calculated TDEE target
+  profileCreatedAt DateTime     @default(now()) // "createdAt" in frontend shape
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserSettings {
+  id               String     @id @default(cuid())
+  userId           String     @unique
+  weightUnit       WeightUnit @default(kg)
+  heightUnit       HeightUnit @default(cm)
+  waterGoalMl      Int        @default(2500)
+  defaultRestSec   Int        @default(90)
+  // Notifications stored as booleans
+  notifRestTimer   Boolean    @default(true)
+  notifPrCelebrate Boolean    @default(true)
+  notifReminders   Boolean    @default(false)
+  sidebarCollapsed Boolean    @default(false)
+  demoMode         Boolean    @default(false)
+  theme            String     @default("system") // "light" | "dark" | "system"
+  updatedAt        DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXERCISES (admin-seeded, read-only for users)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Exercise {
+  id               String      @id // e.g. "bench-press"
+  name             String
+  muscleGroup      MuscleGroup
+  secondaryMuscles String[]    // array of strings
+  equipment        String      // kept as string to preserve "ez-bar" etc.
+  difficulty       Difficulty
+  instructions     String[]
+  tips             String[]
+  imageKey         String      // key into frontend exerciseImages lookup
+  imageUrl         String?     // optional resolved URL
+  bodyweight       Boolean     @default(false)
+  isActive         Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relations
+  plannedExercises   PlannedExercise[]
+  sessionExercises   SessionExercise[]
+  templateExercises  TemplateExercise[]
+
+  @@index([muscleGroup])
+  @@index([equipment])
+  @@map("exercises")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FOODS (admin-seeded, read-only for users)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Food {
+  id             String       @id // e.g. "chicken-breast"
+  name           String
+  category       String       // FoodCategory enum values stored as string for flexibility
+  cuisine        String
+  meals          String[]     // MealType[] stored as string array
+  aliases        String[]     @default([])
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  servingOptions FoodServingOption[]
+  logEntries     FoodLogEntry[]
+
+  @@index([category])
+  @@index([name])
+  @@map("foods")
+}
+
+model FoodServingOption {
+  id       String  @id @default(cuid())
+  foodId   String
+  label    String
+  grams    Decimal @db.Decimal(7, 2)
+  calories Decimal @db.Decimal(7, 1)
+  protein  Decimal @db.Decimal(6, 1)
+  carbs    Decimal @db.Decimal(6, 1)
+  fat      Decimal @db.Decimal(6, 1)
+  sortOrder Int    @default(0)
+
+  food Food @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@index([foodId])
+  @@map("food_serving_options")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT TEMPLATES (System templates)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkoutTemplate {
+  id            String          @id @default(cuid())
+  name          String
+  category      WorkoutCategory
+  description   String          @default("")
+  scheduledDays Int[]           // 0=Sun, 1=Mon … 6=Sat
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  exercises     TemplateExercise[]
+
+  @@map("workout_templates")
+}
+
+model TemplateExercise {
+  id           String  @id @default(cuid())
+  templateId   String
+  exerciseId   String
+  sortOrder    Int     @default(0)
+  sets         Int
+  repMin       Int
+  repMax       Int
+  targetWeight Decimal? @db.Decimal(6, 1)
+  restSec      Int
+
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise        @relation(fields: [exerciseId], references: [id])
+
+  @@index([templateId])
+  @@map("template_exercises")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT PLANS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkoutPlan {
+  id            String          @id @default(cuid())
+  userId        String
+  name          String
+  category      WorkoutCategory
+  notes         String          @default("")
+  scheduledDays Int[]           // 0=Sun, 1=Mon … 6=Sat
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plannedExercises PlannedExercise[]
+  sessions         WorkoutSession[]
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("workout_plans")
+}
+
+model PlannedExercise {
+  id           String  @id @default(cuid())
+  planId       String
+  exerciseId   String
+  sortOrder    Int     @default(0)
+  sets         Int
+  repMin       Int
+  repMax       Int
+  targetWeight Decimal? @db.Decimal(6, 1)
+  restSec      Int
+  notes        String  @default("")
+
+  plan     WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exercise Exercise    @relation(fields: [exerciseId], references: [id])
+
+  @@index([planId])
+  @@map("planned_exercises")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT SESSIONS (completed history)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkoutSession {
+  id          String          @id @default(cuid())
+  userId      String
+  planId      String?
+  name        String
+  category    WorkoutCategory
+  startedAt   DateTime
+  endedAt     DateTime
+  durationSec Int
+  notes       String          @default("")
+  createdAt   DateTime        @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      WorkoutPlan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  exercises SessionExercise[]
+
+  @@index([userId])
+  @@index([userId, startedAt])
+  @@index([planId])
+  @@map("workout_sessions")
+}
+
+model SessionExercise {
+  id         String @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  sortOrder  Int    @default(0)
+  notes      String @default("")
+  restSec    Int    @default(90)
+
+  session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id])
+  sets     SessionSet[]
+
+  @@index([sessionId])
+  @@map("session_exercises")
+}
+
+model SessionSet {
+  id         String  @id @default(cuid())
+  exerciseId String  // FK to SessionExercise
+  weight     Decimal @db.Decimal(6, 1)
+  reps       Int
+  completed  Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  exercise SessionExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+  @@map("session_sets")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIVE SESSION (in-progress, one per user)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ActiveSession {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  planId               String?
+  name                 String
+  category             WorkoutCategory
+  startedAt            DateTime
+  notes                String   @default("")
+  currentExerciseIndex Int      @default(0)
+  // exercises stored as JSONB — this is transient in-progress data that
+  // changes on every set update, so denormalized is correct here
+  exercisesJson        Json     @default("[]")
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("active_sessions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NUTRITION / FOOD LOGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FoodLogEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  foodId       String
+  date         String   // yyyy-MM-dd (stored as string to avoid timezone shifts)
+  time         String   // HH:mm
+  meal         MealType
+  foodName     String   // snapshotted at log time
+  servingLabel String   // snapshotted at log time
+  servingGrams Decimal  @db.Decimal(7, 2)
+  quantity     Decimal  @db.Decimal(7, 3)
+  calories     Decimal  @db.Decimal(7, 1)
+  protein      Decimal  @db.Decimal(6, 1)
+  carbs        Decimal  @db.Decimal(6, 1)
+  fat          Decimal  @db.Decimal(6, 1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food Food @relation(fields: [foodId], references: [id])
+
+  @@index([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("food_log_entries")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BODY / PROGRESS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // yyyy-MM-dd
+  weightKg  Decimal  @db.Decimal(5, 1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // one entry per user per day
+  @@index([userId, date])
+  @@map("weight_entries")
+}
+
+model MeasurementEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String   // yyyy-MM-dd
+  // All in centimetres; nullable because user may not measure everything
+  chestCm     Decimal? @db.Decimal(5, 1)
+  waistCm     Decimal? @db.Decimal(5, 1)
+  armsCm      Decimal? @db.Decimal(5, 1)
+  thighsCm    Decimal? @db.Decimal(5, 1)
+  shouldersCm Decimal? @db.Decimal(5, 1)
+  hipsCm      Decimal? @db.Decimal(5, 1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // one entry per user per day
+  @@index([userId, date])
+  @@map("measurement_entries")
+}
+
+model WaterLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // yyyy-MM-dd
+  amountMl  Int      // total for the day
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // one record per day
+  @@index([userId, date])
+  @@map("water_logs")
+}
+
+model ProgressPhoto {
+  id        String    @id @default(cuid())
+  userId    String
+  date      String    // yyyy-MM-dd
+  pose      PhotoPose
+  filePath  String    // server-side path (opaque to client)
+  fileUrl   String    // public URL served by the API
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId])
+  @@map("progress_photos")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?     // null for unauthenticated events like failed login
+  action    AuditAction
+  metadata  Json?       // non-sensitive contextual data
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(info)
+  actionUrl String?          // optional deep-link URL in the app
+  readAt    DateTime?        // null = unread
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
