@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/nutrition/logs", nutritionController.getFoodLogs);
+router.get("/nutrition/rescue", nutritionController.getRescueOptions);
 router.post("/nutrition/logs", validate({ body: addFoodEntriesSchema }), nutritionController.addFoodEntries);
 router.get("/nutrition/logs/:id", nutritionController.getLogById);
 router.patch("/nutrition/logs/:id", validate({ body: updateFoodEntrySchema }), nutritionController.updateFoodEntry);

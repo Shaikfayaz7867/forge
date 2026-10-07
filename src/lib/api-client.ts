@@ -242,6 +242,17 @@ export const forgeApi = {
     return res.json();
   },
 
+  async getRescueOptions(params: { craving: string; remainingCalories?: number; remainingProtein?: number; remainingCarbs?: number; remainingFat?: number }) {
+    const query = new URLSearchParams();
+    query.set("craving", params.craving);
+    if (params.remainingCalories !== undefined) query.set("remainingCalories", String(params.remainingCalories));
+    if (params.remainingProtein !== undefined) query.set("remainingProtein", String(params.remainingProtein));
+    if (params.remainingCarbs !== undefined) query.set("remainingCarbs", String(params.remainingCarbs));
+    if (params.remainingFat !== undefined) query.set("remainingFat", String(params.remainingFat));
+    const res = await fetchWithAuth(`/nutrition/rescue?${query.toString()}`);
+    return res.json();
+  },
+
   async addFoodEntries(entries: unknown[]) {
     const res = await fetchWithAuth("/nutrition/logs", {
       method: "POST",

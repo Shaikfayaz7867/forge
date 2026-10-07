@@ -155,6 +155,7 @@ export type FoodCategory =
 export type MealType = "breakfast" | "lunch" | "snack" | "dinner" | "other";
 
 export interface ServingOption {
+  id?: string;
   label: string;
   grams: number;
   calories: number;

@@ -405,6 +405,74 @@ export const forge = {
   },
 
   /* Food */
+  async getRescueOptions(params: { craving: string; remainingCalories: number; remainingProtein?: number; remainingCarbs?: number; remainingFat?: number }) {
+    try {
+      const res = await forgeApi.getRescueOptions(params);
+      if (res.success && res.data) return res.data;
+    } catch {
+      // Fall back to client calculation if backend API unavailable
+    }
+    // Client-side fallback computation from state.foods
+    const craving = params.craving || "sweet";
+    const targetCals = Math.max(80, Math.min(params.remainingCalories || 300, 800));
+    const foods = state.foods || [];
+    const candidates: any[] = [];
+    const categoriesMap: Record<string, string[]> = {
+      sweet: ["Sweets", "Fruits", "Drinks", "Dairy"],
+      salty: ["Snacks", "Nuts_and_Seeds"],
+      savory: ["Curries", "Breads", "Breakfast", "Protein"],
+      creamy: ["Dairy", "Sweets"],
+      refreshing: ["Drinks", "Fruits"],
+      high_protein: ["Protein", "Dairy"],
+    };
+    const titlesMap: Record<string, string> = {
+      sweet: "Sweet & Chocolatey",
+      salty: "Salty & Crunchy",
+      savory: "Savory & Comfort",
+      creamy: "Cold & Creamy",
+      refreshing: "Refreshing & Hydrating",
+      high_protein: "High Protein Emergency",
+    };
+    const targetCategories = categoriesMap[craving] || categoriesMap.sweet;
+
+    for (const food of foods) {
+      if (!targetCategories.includes(food.category) && !food.name.toLowerCase().includes(craving)) continue;
+      for (const option of food.servingOptions || []) {
+        for (const mult of [1.0, 0.75, 0.5]) {
+          const scaledCals = Math.round(Number(option.calories) * mult);
+          if (scaledCals < 30 || scaledCals > targetCals + 50) continue;
+          candidates.push({
+            id: `${food.id}_${option.id}_${mult}`,
+            foodId: food.id,
+            foodName: food.name,
+            category: food.category,
+            servingLabel: mult === 1 ? option.label : `${mult}x ${option.label}`,
+            servingGrams: Math.round(Number(option.grams) * mult),
+            quantity: mult,
+            calories: scaledCals,
+            protein: Math.round(Number(option.protein) * mult * 10) / 10,
+            carbs: Math.round(Number(option.carbs) * mult * 10) / 10,
+            fat: Math.round(Number(option.fat) * mult * 10) / 10,
+            reason: `Only ${scaledCals} kcal • Fits your target!`,
+            encouragement: "Zero guilt! Satisfies your craving while keeping your streak 100% active.",
+          });
+        }
+      }
+    }
+    candidates.sort((a, b) => b.calories - a.calories);
+    const unique = new Map();
+    for (const c of candidates) {
+      if (!unique.has(c.foodId)) unique.set(c.foodId, c);
+      if (unique.size >= 4) break;
+    }
+    return {
+      craving,
+      cravingTitle: titlesMap[craving] || "Rescue Treat",
+      targetCalories: targetCals,
+      options: Array.from(unique.values()),
+    };
+  },
+
   async addFoodEntries(entries: FoodLogEntry[]) {
     updateState({ foodLogs: [...state.foodLogs, ...entries] });
     try {

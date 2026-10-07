@@ -1,4 +1,5 @@
 import { nutritionService } from "../services/nutrition.service.js";
+import { rescueService } from "../services/rescue.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { sendSuccess, sendCreated } from "../utils/response.js";
 
@@ -11,6 +12,18 @@ export const nutritionController = {
     }
     const logs = await nutritionService.listEntries(req.user.id, { from, to });
     return sendSuccess(res, logs);
+  }),
+
+  getRescueOptions: asyncHandler(async (req, res) => {
+    const { craving, remainingCalories, remainingProtein, remainingCarbs, remainingFat } = req.query;
+    const result = await rescueService.getRescueOptions({
+      craving: craving || "sweet",
+      remainingCalories,
+      remainingProtein,
+      remainingCarbs,
+      remainingFat,
+    });
+    return sendSuccess(res, result);
   }),
 
   getLogById: asyncHandler(async (req, res) => {

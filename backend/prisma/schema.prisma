@@ -283,6 +283,7 @@ model Food {
   cuisine        String
   meals          String[]     // MealType[] stored as string array
   aliases        String[]     @default([])
+  tags           String[]     @default([])
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

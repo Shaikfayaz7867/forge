@@ -2,7 +2,7 @@
 
 import { addDays, format, isToday as isTodayFn } from "date-fns";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2, Utensils } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Plus, ShieldAlert, Trash2, Utensils } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useUrlTrigger } from "@/hooks/use-url-trigger";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import { forge, useForge } from "@/store/forge-store";
 import { AddFoodDialog } from "./add-food-dialog";
 import { EditEntryDialog } from "./edit-entry-dialog";
 import { WaterTracker } from "./water-tracker";
+import { CravingEmergencyDialog } from "./craving-emergency-dialog";
 
 function FoodRow({ entry, onEdit }: { entry: FoodLogEntry; onEdit: () => void }) {
   const remove = async () => {
@@ -83,6 +84,7 @@ export function NutritionView() {
   const [dialog, setDialog] = useState<{ open: boolean; meal: MealType; foodId: string | null; key: number }>({ open: false, meal: "breakfast", foodId: null, key: 0 });
   const [editing, setEditing] = useState<FoodLogEntry | null>(null);
   const [trend, setTrend] = useState<Trend>("7");
+  const [rescueOpen, setRescueOpen] = useState(false);
 
   const openDialog = (meal: MealType, foodId: string | null = null) => setDialog((d) => ({ open: true, meal, foodId, key: d.key + 1 }));
   useUrlTrigger("add", (add) => openDialog(mealForTime(), add === "1" ? null : add));
@@ -112,7 +114,7 @@ export function NutritionView() {
           <p className="eyebrow">Nutrition</p>
           <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.025em] sm:text-[32px]">{isToday ? "Today's Nutrition" : format(fromDateKey(date), "EEEE, MMM d")}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center rounded-full border bg-surface p-0.5">
             <Button variant="ghost" size="icon-sm" onClick={() => setDate(toDateKey(addDays(fromDateKey(date), -1)))} aria-label="Previous day">
               <ChevronLeft />
@@ -124,6 +126,13 @@ export function NutritionView() {
               <ChevronRight />
             </Button>
           </div>
+          <Button
+            size="lg"
+            onClick={() => setRescueOpen(true)}
+            className="border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-600 font-semibold shadow-sm transition-all"
+          >
+            <ShieldAlert data-icon="inline-start" className="animate-pulse" /> Craving Rescue 🆘
+          </Button>
           <Button size="lg" className="hidden sm:inline-flex" onClick={() => openAdd()}>
             <Plus data-icon="inline-start" /> Add food
           </Button>
@@ -261,6 +270,15 @@ export function NutritionView() {
 
       <AddFoodDialog key={dialog.key} open={dialog.open} onOpenChange={(open) => setDialog((d) => ({ ...d, open }))} date={date} defaultMeal={dialog.meal} initialFoodId={dialog.foodId} />
       {editing && <EditEntryDialog key={editing.id} entry={editing} onClose={() => setEditing(null)} />}
+      <CravingEmergencyDialog
+        open={rescueOpen}
+        onOpenChange={setRescueOpen}
+        date={date}
+        remainingCalories={remaining}
+        remainingProtein={targets.protein - totals.protein}
+        remainingCarbs={targets.carbs - totals.carbs}
+        remainingFat={targets.fat - totals.fat}
+      />
     </div>
   );
 }
