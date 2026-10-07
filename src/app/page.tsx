@@ -1,6 +1,7 @@
 import { getForgeState, exerciseById, foodById } from "@/store/forge-store";
 import { Hero } from "@/components/landing/hero";
 import { LandingNav } from "@/components/landing/landing-nav";
+import { ScrollPulldown } from "@/components/landing/scroll-pulldown";
 import {
   CTASection,
   LandingFooter,
@@ -9,6 +10,7 @@ import {
   ProblemSection,
   ProgressPreviewSection,
   WorkoutPreviewSection,
+  RescueFeatureSection,
 } from "@/components/landing/sections";
 import { HERO_STATS } from "@/data/landing";
 
@@ -21,12 +23,14 @@ export default function LandingPage() {
         Skip to content
       </a>
       <LandingNav />
+      <ScrollPulldown />
       <main id="main-content">
         <Hero stats={stats} />
         <ProblemSection />
         <PillarsSection />
         <WorkoutPreviewSection />
         <NutritionPreviewSection />
+        <RescueFeatureSection />
         <ProgressPreviewSection />
         <CTASection />
       </main>

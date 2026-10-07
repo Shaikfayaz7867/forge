@@ -427,6 +427,38 @@ export function ProgressPreviewSection() {
   );
 }
 
+/* -------------------------------- Rescue Feature -------------------------------- */
+
+export function RescueFeatureSection() {
+  const startHref = useStartHref();
+  return (
+    <section id="rescue" className="dark px-4 py-24 sm:px-6 sm:py-32 bg-background text-foreground">
+      <div className="mx-auto grid max-w-[1240px] gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <Reveal className="max-w-2xl">
+          <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-brand">NEW FEATURE</p>
+          <h2 className="mt-5 text-4xl leading-[1.04] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
+            🆘 Rescue Me: Your Guilt-Free Craving Companion
+          </h2>
+          <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-muted-foreground">
+            Dieting doesn't have to mean ignoring your cravings. When the urge to snack hits, simply hit the "Rescue Me" button. Our smart algorithm instantly scans your remaining daily macros and suggests perfect, portion-controlled options that satisfy your craving without breaking your diet.
+          </p>
+          <div className="mt-9">
+            <PillCTA href={startHref} className="bg-brand text-[#1a2a05] hover:bg-brand/90 font-semibold">
+              Try It Now
+            </PillCTA>
+          </div>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-surface">
+             <img src="/rescue-mockup.jpg" alt="Rescue Me Feature Mockup" className="w-full h-auto object-cover" />
+             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2rem]"></div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------------ CTA ------------------------------------ */
 
 export function CTASection() {
