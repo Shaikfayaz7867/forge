@@ -172,7 +172,7 @@ async function loadFromBackend() {
         plans: plansRes?.success ? plansRes.data : [],
         history: historyRes?.success && Array.isArray(historyRes.data?.items) ? historyRes.data.items : (historyRes?.success && Array.isArray(historyRes.data) ? historyRes.data : []),
         activeSession: activeRes?.success ? activeRes.data : null,
-        foodLogs: foodRes?.success && Array.isArray(foodRes.data) ? foodRes.data : [],
+        foodLogs: foodRes?.success && Array.isArray(foodRes.data?.items) ? foodRes.data.items : (foodRes?.success && Array.isArray(foodRes.data) ? foodRes.data : []),
         weights,
         measurements,
         water: waterRecord,
@@ -476,9 +476,14 @@ export const forge = {
   async addFoodEntries(entries: FoodLogEntry[]) {
     updateState({ foodLogs: [...state.foodLogs, ...entries] });
     try {
-      await forgeApi.addFoodEntries(entries);
-    } catch {
-      toast.error("Failed to save food log to server");
+      const res = await forgeApi.addFoodEntries(entries);
+      if (res && !res.success) {
+        console.error("Backend error when saving food entries:", res.error);
+        throw new Error(res.error?.message || "Failed to save food log to server");
+      }
+    } catch (err: any) {
+      console.error("Exception in addFoodEntries:", err);
+      toast.error(err.message || "Failed to save food log to server");
     }
   },
   async updateFoodEntry(id: string, patch: Partial<FoodLogEntry>) {

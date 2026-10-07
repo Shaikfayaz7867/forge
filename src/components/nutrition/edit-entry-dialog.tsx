@@ -23,11 +23,20 @@ export function EditEntryDialog({ entry, onClose }: { entry: FoodLogEntry; onClo
 
   const quantity = parseFloat(qty);
   const valid = !Number.isNaN(quantity) && quantity > 0 && quantity <= 50;
-  const serving = food?.servingOptions[servingIdx];
-  const macros = serving && valid ? scaleServing(serving, quantity) : null;
+  
+  const serving = food?.servingOptions[servingIdx] || {
+    label: entry.servingLabel,
+    grams: entry.servingGrams,
+    calories: Number(entry.calories) / Number(entry.quantity),
+    protein: Number(entry.protein) / Number(entry.quantity),
+    carbs: Number(entry.carbs) / Number(entry.quantity),
+    fat: Number(entry.fat) / Number(entry.quantity),
+  };
+  
+  const macros = valid ? scaleServing(serving, quantity) : null;
 
   const save = () => {
-    if (!valid || !serving) {
+    if (!valid) {
       toast.error("Enter a quantity between 0.1 and 50");
       return;
     }
