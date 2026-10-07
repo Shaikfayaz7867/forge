@@ -628,6 +628,6 @@ export const forge = {
       // Ignore network errors on logout
     }
     this.resetAll();
-    window.location.href = "/login";
+    window.location.href = "/";
   },
 };

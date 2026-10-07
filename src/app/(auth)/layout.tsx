@@ -2,7 +2,7 @@ import React from "react";
 
 export default function AuthLayoutGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen w-full text-foreground font-sans overflow-hidden flex bg-black">
+    <div className="dark relative min-h-screen w-full text-foreground font-sans overflow-hidden flex bg-black">
       {/* Background Video */}
       <video
         autoPlay

@@ -432,7 +432,7 @@ export function ProgressPreviewSection() {
 export function RescueFeatureSection() {
   const startHref = useStartHref();
   return (
-    <section id="rescue" className="px-4 py-24 sm:px-6 sm:py-32 bg-surface-2 dark:bg-foreground dark:text-background">
+    <section id="rescue" className="px-4 py-24 sm:px-6 sm:py-32 bg-surface-2 dark:bg-background dark:text-foreground">
       <div className="mx-auto grid max-w-[1240px] gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
         <Reveal className="max-w-2xl">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-brand">NEW FEATURE</p>

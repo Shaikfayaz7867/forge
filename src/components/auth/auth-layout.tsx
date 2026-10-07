@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -10,7 +11,14 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full relative">
+      <Link 
+        href="/" 
+        className="absolute left-0 top-0 sm:-left-12 sm:top-2 p-2 text-muted-foreground hover:text-foreground hover:bg-surface-2/50 rounded-full transition-colors flex items-center justify-center"
+        aria-label="Back to home"
+      >
+        <ArrowLeft className="size-5" />
+      </Link>
       <div className="flex w-full flex-col gap-6">
         <Link href="/" className="flex items-center gap-2 self-center font-medium">
           <div className="flex size-10 items-center justify-center rounded-md bg-foreground text-background">
