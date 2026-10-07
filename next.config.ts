@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://forge-backend-u1cg.onrender.com/api/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {
