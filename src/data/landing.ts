@@ -3,6 +3,7 @@
 export const NAV_LINKS = [
   { href: "#workouts", label: "Workouts" },
   { href: "#nutrition", label: "Nutrition" },
+  { href: "#rescue", label: "Rescue" },
   { href: "#progress", label: "Progress" },
 ];
 
